@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from app import models
+from .models import Insert
+
 
 class InsertSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Insert
+        model = Insert
         fields = '__all__'
