@@ -1,8 +1,14 @@
 from rest_framework import serializers
-from .models import Insert
+from .models import Client, PointsHistoric
 
 
-class InsertSerializer(serializers.ModelSerializer):
+class ClientSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Insert
+        model = Client
+        fields = '__all__'
+
+
+class PointsHistoricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PointsHistoric
         fields = '__all__'

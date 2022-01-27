@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Insert
-from .serializers import InsertSerializer
+from .models import Client, PointsHistoric
+from .serializers import ClientSerializer, PointsHistoricSerializer
 
 
 class InsertAPIView(APIView):
@@ -11,40 +11,47 @@ class InsertAPIView(APIView):
     Programa de Pontos Ameixa
     """
     def get(self, request):
-        company = Insert.objects.all()
-        serializer = InsertSerializer(company, many=True)
+        company = Client.objects.all()
+        serializer = ClientSerializer(company, many=True)
         return Response(serializer.data)
 
     def post(self, request):
         data = request.data
-        company = Insert.objects.filter(company=data['company']).first()
+        company = Client.objects.filter(company=data['company']).first()
+        points_to_add = data['earned_points'] - data['spent_points']
         if company:
-            company.earned_points += data['earned_points']
-            company.spent_points += data['spent_points']
+            company.balance += points_to_add
         else:
-            company = Insert()
+            company = Client()
             company.company = data['company']
-            company.earned_points = data['earned_points']
-            company.spent_points = data['spent_points']
+            company.balance = points_to_add
         company.save()
+        points = PointsHistoric()
+        points.earned_points = data['earned_points']
+        points.spent_points = data['spent_points']
+        points.client_id = company.id
+        points.save()
         return Response(status=200)
 
-    def put(self, request, id):
+    def put(self, request):
         data = request.data
-        earned_points = data.get("earned_points")
-        spent_points = data.get("spent_points")
-        cash_back = Insert.objects.get(id=id)
-        if earned_points:
-            cash_back.earned_points += earned_points
-        if spent_points:
-            cash_back.spent_points += spent_points
-        cash_back.save()
+        company = Client.objects.filter(company=data['company']).first()
+        if not company:
+            return Response(status=404)
+        points_to_add = data['earned_points'] - data['spent_points']
+        company.balance += points_to_add
+        company.save()
+        points = PointsHistoric()
+        points.earned_points = data['earned_points']
+        points.spent_points = data['spent_points']
+        points.client = company.id
+        points.save()
         return Response(status=204)
 
 
-    def delete(self, request, id):
+    def delete(self, id):
         try:
-            Insert.objects.get(id=id).delete()
+            Client.objects.get(id=id).delete()
             return Response(status=204)
         except Exception as error:
             return Response(error, status=404)
@@ -53,13 +60,14 @@ class InsertAPIView(APIView):
 class ResultAPIView(APIView):
     def get(self, request, id):
         try:
-            company = Insert.objects.get(id=id)
-            total = company.earned_points - company.spent_points
-            return Response({
-                "total": total
-            }, status=201)
+            company_points = PointsHistoric.objects.filter(client_id=id).all()
+            data = PointsHistoricSerializer(company_points, many=True).data
+            return Response(data, status=201)
         except Exception as error:
             return Response(error, status=404)
+
+    # def get(self, request, id):
+        
 
 # class ResultPartialAPIView(APIView)
 #     def get(self, request, id):
