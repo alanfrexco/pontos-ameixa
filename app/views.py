@@ -10,6 +10,7 @@ class InsertAPIView(APIView):
     """
     Programa de Pontos Ameixa
     """
+
     def get(self, request):
         company = Client.objects.all()
         serializer = ClientSerializer(company, many=True)
@@ -35,7 +36,9 @@ class InsertAPIView(APIView):
 
     def put(self, request):
         data = request.data
+        print(data)
         company = Client.objects.filter(company=data['company']).first()
+        print(company)
         if not company:
             return Response(status=404)
         points_to_add = data['earned_points'] - data['spent_points']
@@ -44,14 +47,16 @@ class InsertAPIView(APIView):
         points = PointsHistoric()
         points.earned_points = data['earned_points']
         points.spent_points = data['spent_points']
-        points.client = company.id
+        points.client_id = company.id
+        print(points.client_id)
         points.save()
         return Response(status=204)
 
-
-    def delete(self, id):
+    def delete(self, request, id):
         try:
-            Client.objects.get(id=id).delete()
+            print(id)
+            Client.objects.filter(id=id).first().delete()
+            print('deletei')
             return Response(status=204)
         except Exception as error:
             return Response(error, status=404)
@@ -66,14 +71,18 @@ class ResultAPIView(APIView):
         except Exception as error:
             return Response(error, status=404)
 
-    # def get(self, request, id):
-        
 
-# class ResultPartialAPIView(APIView)
-#     def get(self, request, id):
-#         try:
-#             company = Insert.objects.get(id=id)
-
-
+class ResultTotalAPIView(APIView):
+    def get(self, request, id):
+        try:
+            company_total_points = PointsHistoric.objects.filter(client_id=id).all()
+            total = 0
+            for plus in company_total_points:
+                total += plus.earned_points - plus.spent_points
+            return Response({
+                "total": total
+            }, status=201)
+        except Exception as error:
+            return Response(error, status=404)
 
 # class InsertList(generics.ListAPIView):
